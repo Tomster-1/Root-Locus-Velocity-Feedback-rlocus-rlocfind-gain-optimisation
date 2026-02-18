@@ -9,7 +9,7 @@ MATLAB scripts for **ENG3018 Practical 3**: root locus analysis, closed-loop sta
 MATLAB solution scripts for **ENG3018 Practical 3**, covering:
 - Root locus plotting and **closed-loop stability ranges** for a unity negative-feedback system with **positive gain** \(K>0\).
 - Reduction of a **velocity feedback** block diagram into an equivalent unity-feedback form.
-- Gain selection so the **dominant complex poles** satisfy **\(\zeta \approx 0.7071\)**.
+- Gain selection so the **dominant complex poles** satisfy **$\(\zeta \approx 0.7071\)$**.
 
 ---
 
