@@ -17,6 +17,12 @@ $$
 G_1(s)=\frac{s^2+2s+4}{s(s+4)(s+6)(s^2+1.2s+1)}
 $$
 
+```math
+G_1(s)=\frac{s^2+2s+4}{s(s+4)(s+6)(s^2+1.2s+1)}
+```
+For the given plant: $G_1(s)=\frac{s^2+2s+4}{s(s+4)(s+6)(s^2+1.2s+1)}$
+
+
 This repo:
 - Plots `rlocus(G1)`
 - Numerically scans \(K\) and refines **stability boundary estimates** (approx. imaginary-axis crossings)
