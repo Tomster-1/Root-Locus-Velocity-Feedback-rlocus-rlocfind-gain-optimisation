@@ -1,0 +1,342 @@
+%% ENG3018 Practical 3 — Root Locus + Stability Range + Velocity Feedback Design
+% Generic loop (Figure 1): negative unity feedback with positive gain K>0
+% Characteristic equation: 1 + K*G(s) = 0   (standard rlocus convention)
+
+clear; close all; clc;
+
+s = tf('s');
+
+%% =========================
+% Q1) Root locus for given G(s)
+% =========================
+% G(s) = (s^2 + 2s + 4) / [ s(s+4)(s+6)(s^2 + 1.2s + 1) ]
+
+G1 = (s^2 + 2*s + 4) / ( s*(s+4)*(s+6)*(s^2 + 1.2*s + 1) );
+
+figure('Name','Q1 Root Locus');
+rlocus(G1);
+grid on;
+title('Q1: Root Locus of G_1(s) with K > 0 (unity negative feedback)');
+xlabel('Real Axis'); ylabel('Imag Axis');
+
+% --- Determine stability range of K using numerical scan + bisection ---
+[num1, den1] = tfdata(G1, 'v');
+
+% Find approximate stable interval(s) for K>0
+opts1.Kmin_scan = 1e-12;     % start near zero (K=0 is marginal due to integrator pole at 0)
+opts1.Kmax_scan = 1e6;
+opts1.Nscan     = 6000;
+opts1.tol_real  = 1e-8;      % stability: Re(pole) < -tol_real
+
+stabInfo1 = findStableRangesFromCharPoly(num1, den1, opts1);
+
+% If you want to use interactive rlocfind instead (optional):
+doInteractive_Q1 = false;
+K_rlocfind_Q1 = NaN;
+if doInteractive_Q1
+    disp('Click on the root locus plot to pick a point; MATLAB will return K.');
+    [K_rlocfind_Q1, polesPicked] = rlocfind(G1); %#ok<NASGU>
+end
+
+%% =========================
+% Q2) Velocity feedback system -> rewrite to generic form (Figure 1), then choose K for zeta=0.7071
+% =========================
+% Figure 3 structure (as interpreted from the handout):
+% Outer unity negative feedback: e = r - y
+% Forward path: (summer) -> H(s) -> (integrator 1/s) -> y
+% Inner "velocity" feedback: signal into integrator is v = sY, fed back through k at the forward summer.
+%
+% Given: H(s) = 5 / (s^2 + 5s + 1)
+%
+% Derivation for root-locus form (poles/characteristic equation):
+% Let N(s)=s^2+5s+1, H(s)=5/N(s), and define K = 5k.
+% Closed-loop characteristic from the full block diagram can be shown to be:
+%     s*N(s) + 5*k*s + 5 = 0
+% =>  s(s^2+5s+1) + K*s + 5 = 0
+% =>  (s^3 + 5s^2 + s + 5) + K*s = 0
+%
+% Standard unity-feedback characteristic is: Den_G(s) + K*Num_G(s) = 0
+% Therefore choose:
+%   G2(s) = Num/Den = s / (s^3 + 5s^2 + s + 5)
+% with gain K = 5k (as the handout instructs).
+
+G2 = s / (s^3 + 5*s^2 + s + 5);
+
+figure('Name','Q2 Root Locus (Equivalent)');
+rlocus(G2);
+grid on;
+title('Q2: Root Locus of Equivalent G_2(s) with K > 0');
+xlabel('Real Axis'); ylabel('Imag Axis');
+hold on;
+% Overlay damping ratio line(s) for zeta = 0.7071
+zeta_target = 0.7071;
+sgrid(zeta_target, []);   % show constant damping ratio lines
+hold off;
+
+% --- Automatically determine K such that dominant complex poles have zeta ~ 0.7071 ---
+[num2, den2] = tfdata(G2, 'v');
+
+opts2.Kmin_scan = 1e-4;
+opts2.Kmax_scan = 1e4;
+opts2.Nscan     = 12000;
+opts2.tol_real  = 1e-9;
+
+design2 = findKForDominantZeta(num2, den2, zeta_target, opts2);
+
+K_star = design2.K;
+k_star = K_star / 5;
+
+% Optional interactive method (click on zeta line intersection), if you prefer:
+doInteractive_Q2 = false;
+K_rlocfind_Q2 = NaN;
+if doInteractive_Q2
+    disp('Click on the root locus near the zeta=0.7071 line; MATLAB will return K.');
+    [K_rlocfind_Q2, polesPicked2] = rlocfind(G2); %#ok<NASGU>
+end
+
+%% ========================= BIG PRINT BLOCK =============================
+fprintf('\n============================================================\n');
+fprintf('ENG3018 Practical 3 — RESULTS PRINT BLOCK\n');
+fprintf('============================================================\n');
+
+fprintf('\nQ1) G1(s) = (s^2 + 2s + 4) / [ s(s+4)(s+6)(s^2 + 1.2s + 1) ]\n');
+fprintf('    Root locus plotted using rlocus(G1).\n');
+
+if isempty(stabInfo1.ranges)
+    fprintf('    Stability scan found NO stable K>0 region (unexpected). Check tolerances.\n');
+else
+    fprintf('    Estimated stable K ranges for closed-loop (Re(poles)<0):\n');
+    for i = 1:size(stabInfo1.ranges,1)
+        fprintf('      Range %d:  K in (%.6g, %.6g)\n', i, stabInfo1.ranges(i,1), stabInfo1.ranges(i,2));
+    end
+    if ~isempty(stabInfo1.boundaries)
+        fprintf('    Refined stability boundary estimates (imag-axis crossings):\n');
+        for i = 1:length(stabInfo1.boundaries)
+            fprintf('      K_crit[%d] ≈ %.10g\n', i, stabInfo1.boundaries(i));
+        end
+    end
+end
+
+fprintf('\nQ2) Velocity feedback rewrite:\n');
+fprintf('    Given H(s) = 5/(s^2 + 5s + 1), with velocity feedback gain k.\n');
+fprintf('    Equivalent generic form uses K = 5k and:\n');
+fprintf('      G2(s) = s / (s^3 + 5s^2 + s + 5)\n');
+fprintf('    Root locus plotted using rlocus(G2), with sgrid(zeta=0.7071).\n');
+
+fprintf('\n    Target damping ratio for dominant complex poles: zeta = %.4f\n', zeta_target);
+fprintf('    Estimated K achieving this (dominant complex poles): K ≈ %.10g\n', K_star);
+fprintf('    Therefore k = K/5 ≈ %.10g\n', k_star);
+
+fprintf('\n    Dominant complex pole at K*:\n');
+fprintf('      p_dom ≈ %.6g %+.6gj\n', real(design2.p_dom), imag(design2.p_dom));
+fprintf('      zeta(p_dom) ≈ %.6f\n', design2.zeta_dom);
+
+fprintf('\n    Closed-loop poles at K* (roots of Den + K*Num):\n');
+for ii = 1:length(design2.poles)
+    fprintf('      p[%d] = %.6g %+.6gj\n', ii, real(design2.poles(ii)), imag(design2.poles(ii)));
+end
+
+fprintf('============================================================\n\n');
+
+%% ========================= Local helper functions =======================
+function info = findStableRangesFromCharPoly(num, den, opts)
+% Finds stable K intervals for unity-feedback characteristic:
+%   den(s) + K*num(s) = 0   (padded to same order)
+% Stability criterion used: all poles satisfy Re(p) < -opts.tol_real
+
+Kmin = opts.Kmin_scan;
+Kmax = opts.Kmax_scan;
+N    = opts.Nscan;
+tol  = opts.tol_real;
+
+Ks = logspace(log10(Kmin), log10(Kmax), N);
+isStable = false(size(Ks));
+
+for i = 1:N
+    p = clPolesFromCharPoly(num, den, Ks(i));
+    isStable(i) = all(real(p) < -tol);
+end
+
+% Convert stable mask to contiguous ranges
+ranges = [];
+boundaries = [];
+
+if any(isStable)
+    idx = find(isStable);
+    % split contiguous regions
+    breaks = [1, find(diff(idx) > 1) + 1, numel(idx)+1];
+    for b = 1:(numel(breaks)-1)
+        seg = idx(breaks(b):breaks(b+1)-1);
+        k_lo = Ks(seg(1));
+        k_hi = Ks(seg(end));
+        ranges = [ranges; k_lo, k_hi]; %#ok<AGROW>
+
+        % refine lower boundary if preceded by unstable
+        if seg(1) > 1 && ~isStable(seg(1)-1)
+            boundaries(end+1) = bisectKBoundary(num, den, Ks(seg(1)-1), Ks(seg(1)), tol); %#ok<AGROW>
+        end
+        % refine upper boundary if followed by unstable
+        if seg(end) < N && ~isStable(seg(end)+1)
+            boundaries(end+1) = bisectKBoundary(num, den, Ks(seg(end)), Ks(seg(end)+1), tol); %#ok<AGROW>
+        end
+    end
+end
+
+info.Ks = Ks;
+info.isStable = isStable;
+info.ranges = ranges;
+info.boundaries = boundaries;
+end
+
+function Kcrit = bisectKBoundary(num, den, Kstable, Kunstable, tol_real)
+% Bisection to find K where max real part of poles crosses ~0.
+% Assumes f(Kstable) < 0 and f(Kunstable) > 0.
+f = @(K) max(real(clPolesFromCharPoly(num, den, K)));
+
+lo = Kstable;
+hi = Kunstable;
+
+% Ensure proper ordering
+if f(lo) > 0
+    tmp = lo; lo = hi; hi = tmp;
+end
+
+for it = 1:80
+    mid = (lo + hi)/2;
+    if f(mid) < -tol_real
+        lo = mid;
+    else
+        hi = mid;
+    end
+end
+
+Kcrit = (lo + hi)/2;
+end
+
+function p = clPolesFromCharPoly(num, den, K)
+% Closed-loop poles from characteristic polynomial den + K*num (with padding)
+den = den(:).';
+num = num(:).';
+
+nd = length(den);
+nn = length(num);
+
+if nn < nd
+    num = [zeros(1, nd-nn), num];
+elseif nd < nn
+    den = [zeros(1, nn-nd), den];
+end
+
+charPoly = den + K*num;
+p = roots(charPoly);
+end
+
+function out = findKForDominantZeta(num, den, zeta_target, opts)
+% Find K such that the DOMINANT COMPLEX closed-loop poles have damping ratio ~ zeta_target.
+% "Dominant" here means the pole pair with the largest real part (closest to imag axis),
+% restricted to complex poles (imag ~= 0).
+
+Kmin = opts.Kmin_scan;
+Kmax = opts.Kmax_scan;
+N    = opts.Nscan;
+
+Ks = logspace(log10(Kmin), log10(Kmax), N);
+
+zetaVals = NaN(size(Ks));
+isDomComplex = false(size(Ks));
+
+for i = 1:N
+    [zetaVals(i), isDomComplex(i)] = dominantComplexZeta(num, den, Ks(i));
+end
+
+% Only consider region where dominant pole is complex (as the question requests a damping ratio)
+valid = isDomComplex & ~isnan(zetaVals);
+
+if ~any(valid)
+    error('No K found where dominant poles are complex in the scan range. Increase scan range.');
+end
+
+% Find where zeta crosses target (monotonic in the valid region for this problem)
+idxValid = find(valid);
+
+% Choose the FIRST crossing (smallest K) to keep the complex pair dominant
+% Find i such that zeta(i) <= target < zeta(i+1)
+Klo = NaN; Khi = NaN;
+for k = 1:(length(idxValid)-1)
+    i1 = idxValid(k);
+    i2 = idxValid(k+1);
+    if zetaVals(i1) <= zeta_target && zetaVals(i2) >= zeta_target
+        Klo = Ks(i1);
+        Khi = Ks(i2);
+        break;
+    end
+end
+
+% If not bracketed, fall back to nearest point
+if isnan(Klo)
+    [~, imin] = min(abs(zetaVals(valid) - zeta_target));
+    Kguess = Ks(idxValid(imin));
+    Klo = Kguess/1.2;
+    Khi = Kguess*1.2;
+end
+
+% Bisection solve for zeta(K) = target within the bracket
+for it = 1:80
+    Km = (Klo + Khi)/2;
+    zm = dominantComplexZetaValueOnly(num, den, Km);
+    if zm < zeta_target
+        Klo = Km;
+    else
+        Khi = Km;
+    end
+end
+
+Kstar = (Klo + Khi)/2;
+
+% Final pole data at K*
+polesStar = clPolesFromCharPoly(num, den, Kstar);
+
+% Find dominant complex pole (largest real part among complex poles)
+complexPoles = polesStar(abs(imag(polesStar)) > 1e-8);
+[~, ic] = max(real(complexPoles));
+pdom = complexPoles(ic);
+zdom = -real(pdom)/abs(pdom);
+
+out.K = Kstar;
+out.poles = polesStar;
+out.p_dom = pdom;
+out.zeta_dom = zdom;
+end
+
+function [zetaVal, isDominantComplex] = dominantComplexZeta(num, den, K)
+% Returns damping ratio of the dominant complex poles (largest real part among complex poles),
+% and a flag if that complex pole is also the overall dominant pole.
+
+p = clPolesFromCharPoly(num, den, K);
+
+% overall dominant pole
+[~, idAll] = max(real(p));
+pAll = p(idAll);
+
+complexPoles = p(abs(imag(p)) > 1e-8);
+if isempty(complexPoles)
+    zetaVal = NaN;
+    isDominantComplex = false;
+    return;
+end
+
+[~, idc] = max(real(complexPoles));
+pC = complexPoles(idc);
+
+zetaVal = -real(pC)/abs(pC);
+isDominantComplex = (abs(imag(pAll)) > 1e-8); % overall dominant is complex
+end
+
+function z = dominantComplexZetaValueOnly(num, den, K)
+% Helper for bisection: returns zeta of dominant complex pole at K (assumes it exists)
+p = clPolesFromCharPoly(num, den, K);
+complexPoles = p(abs(imag(p)) > 1e-8);
+[~, idc] = max(real(complexPoles));
+pC = complexPoles(idc);
+z = -real(pC)/abs(pC);
+end
