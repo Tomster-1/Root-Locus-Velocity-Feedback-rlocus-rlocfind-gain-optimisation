@@ -13,9 +13,8 @@ MATLAB solution scripts for **ENG3018 Practical 3**, covering:
 
 ### Q1 — Root locus + stability range for \(K\)
 For the given plant:
-\[
-G_1(s)=\frac{s^2+2s+4}{s(s+4)(s+6)(s^2+1.2s+1)}
-\]
+G1(s) = (s^2 + 2s + 4) / [ s (s+4) (s+6) (s^2 + 1.2s + 1) ]
+
 This repo:
 - Plots `rlocus(G1)`
 - Numerically scans \(K\) and refines **stability boundary estimates** (approx. imaginary-axis crossings)
@@ -45,8 +44,6 @@ Then selects \(K\) so the **dominant complex pole pair** has \(\zeta \approx 0.7
 
 ## How to run
 1. Open MATLAB
-2. Set your working directory to the repo folder
-3. Run the main script:
+2. Copy paste code into MATLAB
+3. Run code
 
-```matlab
-ENG3018_Practical3.m
