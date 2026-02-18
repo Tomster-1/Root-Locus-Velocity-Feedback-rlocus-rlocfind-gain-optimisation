@@ -13,7 +13,9 @@ MATLAB solution scripts for **ENG3018 Practical 3**, covering:
 
 ### Q1 — Root locus + stability range for \(K\)
 For the given plant:
-G1(s) = (s^2 + 2s + 4) / [ s (s+4) (s+6) (s^2 + 1.2s + 1) ]
+$$
+G_1(s)=\frac{s^2+2s+4}{s(s+4)(s+6)(s^2+1.2s+1)}
+$$
 
 This repo:
 - Plots `rlocus(G1)`
