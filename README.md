@@ -15,7 +15,7 @@ MATLAB solution scripts for **ENG3018 Practical 3**, covering:
 
 ## What’s in here
 
-### Q1 — Root locus + stability range for \(K\)
+### Q1 — Root locus + stability range for $\(K\)$
 
 For the given plant:
 
@@ -29,7 +29,7 @@ This repo:
 
 ---
 
-### Q2 — Velocity feedback → equivalent unity-feedback + \(\zeta\) design
+### Q2 — Velocity feedback → equivalent unity-feedback + $\(\zeta\)$ design
 
 Given:
 
@@ -38,16 +38,16 @@ H(s)=\frac{5}{s^2+5s+1}
 ```
 
 A velocity-feedback structure is rewritten into a unity-feedback root-locus form:
-- Defines \(K = 5k\)
+- Defines $\(K = 5k\)$
 - Uses an equivalent:
 
 ```math
 G_2(s)=\frac{s}{s^3+5s^2+s+5}
 ```
 
-Then selects \(K\) so the **dominant complex pole pair** has \(\zeta \approx 0.7071\).
+Then selects \(K\) so the **dominant complex pole pair** has $\(\zeta \approx 0.7071\)$.
 
-> ⚠️ Note: You may see another intersection with \(\zeta=0.707\) at a different \(K\) (e.g. around 11.4), but it can correspond to a **non-dominant** complex pair (a slow real pole may dominate). The script targets the **dominant complex poles**, which is typically what the design requirement implies.
+> ⚠️ Note: You may see another intersection with $\(\zeta=0.707\)$ at a different $\(K\)$ (e.g. around 11.4), but it can correspond to a **non-dominant** complex pair (a slow real pole may dominate). The script targets the **dominant complex poles**, which is typically what the design requirement implies.
 
 ---
 
